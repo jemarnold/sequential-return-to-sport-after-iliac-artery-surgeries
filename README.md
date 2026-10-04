@@ -7,7 +7,7 @@ target="&quot;_blank&quot;"></a>
 target="&quot;_blank&quot;"></a>
 <a href="https://orcid.org/0000-0003-3908-9447"
 target="&quot;_blank&quot;"></a>
-2026-09-28
+2026-10-04
 
 This report reproduces **Figure 2** from the manuscript: *Arnold JI,
 Pignanelli C, Hodgins A, O’Croinin E, Koehle MS. Return to Sport After
@@ -58,108 +58,106 @@ flow limitations in the iliac arteries using near-infrared spectroscopy.
 data cannot be shared. The figure below can be reproduced with summary
 statistics, which are embedded here.
 
-Group sizes:
+Group sizes (legs with paired ABI and HRT):
 
-| param | healthy | patient |
-|-------|--------:|--------:|
-| ABI   |      66 |     306 |
-| HRT   |      58 |     223 |
+| healthy | patient |
+|--------:|--------:|
+|      58 |     211 |
 
-Derivation from the raw database `db` (not included; not run):
+Derivation from the raw database `df` (one row per leg with `id`,
+`group`, `leg`, `abi`, `hrt`; not included; not run):
 
 ``` r
-## transform: HRT is right-skewed (log approximately normalises it);
-## ABI is near-symmetric, so it stays on the raw scale
-transform_param <- function(value, param) {
-    if_else(param == "hrt", log(value), value)
+## robust z-score vs healthy reference: median and IQR-derived SD
+## (IQR / 1.349), resistant to outliers and non-normal tails
+robust_z <- function(x, ref) {
+    return(
+        (x - median(ref, na.rm = TRUE)) /
+            (IQR(ref, na.rm = TRUE) / (2 * qnorm(0.75)))
+    )
 }
 
-## robust z-score reference from healthy: median and IQR-derived SD
-## (IQR / 1.349), resistant to outliers and non-normal tails
-ref <- db |>
-    filter(group == "healthy") |>
-    summarise(
-        .by = param,
-        ref_centre = median(transform_param(value, param)),
-        ref_scale = IQR(transform_param(value, param)) / (2 * qnorm(0.75)),
-    )
+healthy <- filter(df, group == "Healthy")
 
-db_z <- db |>
-    left_join(ref, by = "param") |>
-    mutate(z = (transform_param(value, param) - ref_centre) / ref_scale)
-
-## robust centre and spread of each group per axis, on the healthy z-scale
-group_stats <- db_z |>
-    summarise(
-        .by = c(group, param),
-        mid = median(z),
-        s = IQR(z) / (2 * qnorm(0.75)),
+## HRT is right-skewed with spread increasing with level (log approximately
+## normalises it); ABI is near-symmetric, so it stays on the raw scale
+df_z <- df |>
+    mutate(
+        abi = robust_z(abi, healthy$abi),
+        hrt = robust_z(log(hrt), log(healthy$hrt)),
     ) |>
-    pivot_wider(names_from = param, values_from = c(mid, s))
+    drop_na(abi, hrt)
+
+## robust centre, spread, and abi-hrt correlation of each group, on the
+## healthy z-scale. pearson r of abi vs log(hrt) (z-scaling is linear, so
+## r is unchanged)
+group_stats <- df_z |>
+    summarise(
+        .by = group,
+        mid_abi = median(abi),
+        mid_hrt = median(hrt),
+        s_abi = IQR(abi) / (2 * qnorm(0.75)),
+        s_hrt = IQR(hrt) / (2 * qnorm(0.75)),
+        cor = cor(abi, hrt),
+    )
 ```
 
 Embedded output of the above:
 
 ``` r
-## healthy reference: median and IQR / 1.349 on the transformed scale
-ref <- tribble(
-    ~param , ~ref_centre , ~ref_scale ,
-    "abi"  , 0.740197    , 0.118514   ,
-    "hrt" , 2.896581    , 0.395201   ,
+## healthy reference: median and IQR / 1.349 (hrt on log scale)
+ref <- tibble(
+    abi_centre = 0.716433,
+    abi_scale = 0.117873,
+    hrt_centre = 2.896581,
+    hrt_scale = 0.395201,
 )
 
-## group centre and spread in healthy z-units. healthy is 0 / 1 by construction
+## group centre, spread, and abi-hrt correlation in healthy z-units. healthy
+## centre and spread are 0 / 1 by construction
 group_stats <- tribble(
-    ~group    , ~mid_abi  , ~mid_hrt , ~s_abi   , ~s_hrt  ,
-    "healthy" ,  0        , 0         , 1        , 1        ,
-    "patient" , -1.093616 , 2.139775  , 1.078512 , 1.376109 ,
+    ~group    , ~mid_abi  , ~mid_hrt , ~s_abi   , ~s_hrt   , ~cor      ,
+    "Healthy" ,  0        , 0        , 1        , 1        , -0.244759 ,
+    "Patient" , -0.897959 , 2.151128 , 1.043538 , 1.376109 , -0.436214 ,
 )
 
 ref
 ```
 
-    # A tibble: 2 × 3
-      param ref_centre ref_scale
-      <chr>      <dbl>     <dbl>
-    1 abi        0.740     0.119
-    2 hrt        2.90      0.395
+    # A tibble: 1 × 4
+      abi_centre abi_scale hrt_centre hrt_scale
+           <dbl>     <dbl>      <dbl>     <dbl>
+    1      0.716     0.118       2.90     0.395
 
 ``` r
 group_stats
 ```
 
-    # A tibble: 2 × 5
-      group   mid_abi mid_hrt s_abi s_hrt
-      <chr>     <dbl>   <dbl> <dbl> <dbl>
-    1 healthy    0       0     1     1   
-    2 patient   -1.09    2.14  1.08  1.38
+    # A tibble: 2 × 6
+      group   mid_abi mid_hrt s_abi s_hrt    cor
+      <chr>     <dbl>   <dbl> <dbl> <dbl>  <dbl>
+    1 Healthy   0        0     1     1    -0.245
+    2 Patient  -0.898    2.15  1.04  1.38 -0.436
 
 ## Group ellipses and case z-scores
 
 ``` r
-## transform: HRT is right-skewed (log approximately normalises it);
-## ABI is near-symmetric, so it stays on the raw scale
-transform_param <- function(value, param) {
-    if_else(param == "hrt", log(value), value)
-}
-
-## 68% bivariate normal ellipse per group. ABI and HRT vectors are unpaired,
-## so their correlation cannot be estimated: axes assumed independent (r = 0),
-## giving axis-aligned ellipses
+## 68% bivariate normal ellipse per group. ABI and HRT paired within leg,
+## so ellipse is tilted by their correlation (cholesky of covariance)
 ellipses <- group_stats |>
     cross_join(tibble(t = seq(0, 2 * pi, length.out = 200))) |>
     mutate(
         r = sqrt(qchisq(0.68, df = 2)),
         abi = mid_abi + r * s_abi * cos(t),
-        hrt = mid_hrt + r * s_hrt * sin(t),
+        hrt = mid_hrt + r * s_hrt * (cor * cos(t) + sqrt(1 - cor^2) * sin(t)),
     )
 
-## case study on same z-scale
+## case study on same z-scale. HRT log-transformed as for the reference
 case_z <- case_data |>
-    pivot_longer(c(abi, hrt), names_to = "param") |>
-    left_join(ref, by = "param") |>
-    mutate(z = (transform_param(value, param) - ref_centre) / ref_scale) |>
-    pivot_wider(id_cols = c(trial, leg), names_from = param, values_from = z) |>
+    mutate(
+        abi = (abi - ref$abi_centre) / ref$abi_scale,
+        hrt = (log(hrt) - ref$hrt_centre) / ref$hrt_scale,
+    ) |>
     ## display-only nudge (z-units) to separate overlapping markers and open
     ## space for arrows
     mutate(
@@ -263,7 +261,7 @@ ggplot() +
         values = setNames(
             mnirs::palette_mnirs(
                 "light red", "light green", "pink", "light blue"
-            ), c("patient", "healthy", "left", "right")
+            ), c("Patient", "Healthy", "left", "right")
         ),
         breaks = c("left", "right")
     ) +
@@ -279,7 +277,8 @@ ggplot() +
     geom_label(
         data = transmute(group_stats, group, abi = mid_abi, hrt = mid_hrt),
         aes(label = group, colour = group),
-        size = 6, vjust = c(2.5, -3), fill = alpha("white", 0.6),
+        size = 6, fill = alpha("white", 0.6),
+        hjust = c(-0.3, 1.2), vjust = c(2, -3),
         linewidth = NA, fontface = "bold", show.legend = FALSE,
     ) +
     lapply(split(case_arrows, ~curv), \(d) geom_curve(
@@ -307,15 +306,15 @@ data-fig-align="center" />
 
 Figure 1: Patient ankle-brachial pressure index (ABI) and muscle
 reoxygenation half-recovery times (HRT), converted to Z-scores based on
-a published cohort of 66 healthy cyclists (green area) and 306 FLIA
-patients (red area). Shaded clusters represent the distribution of each
-group. Points numbered 1 to 5 were recorded bilaterally in the patient’s
-left (pink) and right (blue) legs at each monitoring assessment across
-the sequential RTS periods. Numbers correspond to the timeline in Figure
-1 and values in Table 1. Values closer to the centre of the green
-“healthy” distribution indicate improvement. The left leg in pink
-improved from pre-surgery (1) to post-surgery (2), with ABI and HRT
-maintained until the final assessment (5). The right leg in blue
+a cohort of 58 healthy cyclists (green area) and 211 FLIA patients (red
+area). Shaded clusters represent approximately the 68% distribution of
+each group. Points numbered 1 to 5 were recorded bilaterally in the
+patient’s left (pink) and right (blue) legs at each monitoring
+assessment across the sequential RTS periods. Numbers correspond to the
+timeline in Figure 1 and values in Table 1. Values closer to the centre
+of the green “healthy” distribution indicate improvement. The left leg
+in pink improved from pre-surgery (1) to post-surgery (2), with ABI and
+HRT maintained until the final assessment (5). The right leg in blue
 worsened from assessment 1 with symptom onset around assessment 3, then
 improved again after right-leg surgery in assessments 4 and 5.
 
