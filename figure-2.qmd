@@ -4,7 +4,10 @@ author:
     name: Jem I Arnold [{{< fa brands github >}}](https://github.com/jemarnold/mnirs){target=\"_blank\"} [{{< fa brands linkedin >}}](https://www.linkedin.com/in/jem--arnold/){target=\"_blank\"} [{{< ai researchgate >}}](https://researchgate.net/profile/Jem-Arnold){target=\"_blank\"} [{{< ai orcid >}}](https://orcid.org/0000-0003-3908-9447){target=\"_blank\"}
     email: jem@jemarnold.ca
     affiliation:
-        name: School of Kinesiology, The University of British Columbia, Vancouver, BC, Canada
+        name: |
+            School of Kinesiology\
+            The University of British Columbia\
+            Vancouver, BC, Canada
 date: today
 format:
   html:
@@ -257,8 +260,7 @@ fig_caption <- "Patient ankle-brachial pressure index (ABI) and muscle reoxygena
 ```
 
 ```{r}
-#| label: fig-case
-#| eval: !expr knitr::is_html_output()
+#| label: figure-2
 #| fig-width: 8.66
 #| fig-height: 5.77
 #| fig-dpi: 300
@@ -313,12 +315,11 @@ ggplot() +
 ```
 
 ```{r}
-#| label: fig-case-include
-#| eval: !expr isFALSE(knitr::is_html_output())
-#| echo: false
-#| fig-cap: !expr fig_caption
-## avoid re-rendering the figure in README.md at the wrong scale
-knitr::include_graphics("figures/fig-case-1.png")
+#| label: save-vector
+#| eval: !expr knitr::pandoc_to("html")
+#| include: !expr knitr::pandoc_to("html")
+## high-res of figure above for journal submission (html render only)
+ggsave("figures/figure-2.svg", width = 8.66, height = 5.77)
 ```
 
 ## Session info

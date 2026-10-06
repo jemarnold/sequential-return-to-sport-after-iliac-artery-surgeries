@@ -7,7 +7,7 @@ target="&quot;_blank&quot;"></a>
 target="&quot;_blank&quot;"></a>
 <a href="https://orcid.org/0000-0003-3908-9447"
 target="&quot;_blank&quot;"></a>
-2026-10-04
+2026-10-06
 
 This report reproduces **Figure 2** from the manuscript: *Arnold JI,
 Pignanelli C, Hodgins A, O’Croinin E, Koehle MS. Return to Sport After
@@ -299,7 +299,7 @@ ggplot() +
     )
 ```
 
-<div id="fig-case-include">
+<div id="fig-case">
 
 <img src="figures/fig-case-1.png" style="width:100.0%"
 data-fig-align="center" />
@@ -348,11 +348,12 @@ sessionInfo()
     [1] mnirs_0.8.0   ggplot2_4.0.3 dplyr_1.2.1   tidyr_1.3.2   tibble_3.3.1 
 
     loaded via a namespace (and not attached):
-     [1] vctrs_0.7.3        cli_3.6.6          knitr_1.51         rlang_1.3.0       
-     [5] xfun_0.60          otel_0.2.0         purrr_1.2.2        generics_0.1.4    
-     [9] S7_0.2.2           jsonlite_2.0.0     glue_1.8.1         htmltools_0.5.9   
-    [13] scales_1.4.0       rmarkdown_2.32     grid_4.6.1         evaluate_1.0.5    
-    [17] fastmap_1.2.0      yaml_2.3.12        lifecycle_1.0.5    compiler_4.6.1    
-    [21] RColorBrewer_1.1-3 pkgconfig_2.0.3    farver_2.1.2       digest_0.6.39     
-    [25] R6_2.6.1           utf8_1.2.6         tidyselect_1.2.1   pillar_1.11.1     
-    [29] magrittr_2.0.5     withr_3.0.3        gtable_0.3.6       tools_4.6.1       
+     [1] gtable_0.3.6       jsonlite_2.0.0     compiler_4.6.1     tidyselect_1.2.1  
+     [5] scales_1.4.0       yaml_2.3.12        fastmap_1.2.0      R6_2.6.1          
+     [9] labeling_0.4.3     generics_0.1.4     knitr_1.51         pillar_1.11.1     
+    [13] RColorBrewer_1.1-3 rlang_1.3.0        utf8_1.2.6         xfun_0.60         
+    [17] S7_0.2.2           otel_0.2.0         cli_3.6.6          withr_3.0.3       
+    [21] magrittr_2.0.5     digest_0.6.39      grid_4.6.1         lifecycle_1.0.5   
+    [25] vctrs_0.7.3        evaluate_1.0.5     glue_1.8.1         farver_2.1.2      
+    [29] rmarkdown_2.32     purrr_1.2.2        tools_4.6.1        pkgconfig_2.0.3   
+    [33] htmltools_0.5.9   
